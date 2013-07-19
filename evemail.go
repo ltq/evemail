@@ -148,7 +148,7 @@ func (httpFeature *Feature) SetRegisteredHandlers(handlers map[string]interface{
 }
 
 func CreateFeature(context *evapplication.EVApplicationContext) (*Feature, error) {
-	configPath, err := evapi.PackageConfigPath("config.xml", context.Name, "github.com/evalgo/evemail")
+	configPath, err := evapi.PackageConfigPath("config.xml", context.Name, "evalgo/evemail")
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	connectors := evmessage.NewEVMessageConnectors()
 	connectorsConf := new(evmessage.EVMessageConnectorsConf)
 	log.Println("search connectors file...")
-	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "github.com/evalgo/evemail")
+	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "evalgo/evemail")
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
 		log.Println("error:", err)
