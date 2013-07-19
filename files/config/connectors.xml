@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EVMessageConnectors>
+  <name>connectors</name>
+  <connectors>
+    <connector>
+      <id>evemonitor</id>
+      <host>127.0.0.1</host>
+      <port>6379</port>
+      <crt></crt>
+      <key></key>
+    </connector>
+    <connector>
+      <id>evredis</id>
+      <host>127.0.0.1</host>
+      <port>6379</port>
+      <crt></crt>
+      <key></key>
+    </connector>
+    <connector>
+      <id>evio</id>
+      <host>127.0.0.1</host>
+      <port>6002</port>
+      <crt></crt>
+      <key></key>
+    </connector>
+    <connector>
+      <id>evsys</id>
+      <host>127.0.0.1</host>
+      <port>10002</port>
+      <crt></crt>
+      <key></key>
+    </connector>
+  </connectors>
+</EVMessageConnectors>
