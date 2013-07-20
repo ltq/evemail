@@ -182,7 +182,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqMsg, resMsg, rpcFuncName, err := RpcObjects["evmail"].EVMessageHttpCreateRpcMessage(w, r)
 	if err != nil {
 		resMsg := evmessage.EVMessageRpcServiceInitializeErrorMessage()
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -193,7 +193,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("search connectors file...")
 	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "evalgo/evemail")
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -202,7 +202,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("read connectors from file...")
 	err = evxml.FromXmlFile(connectorsConf, connPath)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -219,7 +219,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get connection data for the service from the monitor
 	ip, port, err := evmonitor.EVMonitorRpcRequestInfo("evemail-rpc", connectorsConf.Connectors)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -234,7 +234,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("remove connectors...")
 	resMsg.Remove(connectors.EVName())
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -243,7 +243,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("running response handle...")
 	response, err := RpcObjects["evmail"].EVMessageHttpRpcHandleResponse(w, r, resMsg)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
+		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
