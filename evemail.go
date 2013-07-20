@@ -5,10 +5,10 @@
 package evemail
 
 import (
-	"errors"
 	"fmt"
 	"github.com/evalgo/evapi"
 	"github.com/evalgo/evapplication"
+	"github.com/evalgo/everror"
 	"github.com/evalgo/evlog"
 	"github.com/evalgo/evmail"
 	"github.com/evalgo/evmessage"
@@ -66,7 +66,7 @@ func (config *FeatureConfig) ServiceName() string {
 func (config *FeatureConfig) ConfigBytes() ([]byte, error) {
 	xml, err := evxml.ToXml(config)
 	if err != nil {
-		return nil, err
+		return nil, everror.NewFromError(err)
 	}
 	return xml, nil
 }
@@ -74,7 +74,7 @@ func (config *FeatureConfig) ConfigBytes() ([]byte, error) {
 func (config *FeatureConfig) ConfigString() (string, error) {
 	xml, err := config.ConfigBytes()
 	if err != nil {
-		return "", err
+		return "", everror.NewFromError(err)
 	}
 	return string(xml[0:]), nil
 }
@@ -89,7 +89,7 @@ func (config *FeatureConfig) Template(typeT string) (string, error) {
 			return tmpl.Path, nil
 		}
 	}
-	return "", errors.New("given template <" + typeT + "> was not found!")
+	return "", everror.New("given template <" + typeT + "> was not found!")
 }
 
 type Feature struct {
@@ -122,11 +122,11 @@ func Config(configPath string) (*FeatureConfig, error) {
 	config := NewFeatureConfig()
 	xml, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return nil, err
+		return nil, everror.NewFromError(err)
 	}
 	err = evxml.FromXml(config, xml)
 	if err != nil {
-		return nil, err
+		return nil, everror.NewFromError(err)
 	}
 	return config, nil
 }
@@ -150,11 +150,11 @@ func (httpFeature *Feature) SetRegisteredHandlers(handlers map[string]interface{
 func CreateFeature(context *evapplication.EVApplicationContext) (*Feature, error) {
 	configPath, err := evapi.PackageConfigPath("config.xml", context.Name, "evalgo/evemail")
 	if err != nil {
-		return nil, err
+		return nil, everror.NewFromError(err)
 	}
 	config, err := Config(configPath)
 	if err != nil {
-		return nil, err
+		return nil, everror.NewFromError(err)
 	}
 
 	feature := NewFeature()
@@ -183,7 +183,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resMsg := evmessage.EVMessageRpcServiceInitializeErrorMessage()
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
@@ -194,7 +194,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "evalgo/evemail")
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
@@ -203,7 +203,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = evxml.FromXmlFile(connectorsConf, connPath)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
@@ -220,7 +220,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ip, port, err := evmonitor.EVMonitorRpcRequestInfo("evemail-rpc", connectorsConf.Connectors)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
@@ -235,7 +235,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resMsg.Remove(connectors.EVName())
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
@@ -244,7 +244,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response, err := RpcObjects["evmail"].EVMessageHttpRpcHandleResponse(w, r, resMsg)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		evlog.Println("error:", err)
+		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
