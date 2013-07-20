@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"github.com/evalgo/evapi"
 	"github.com/evalgo/evapplication"
+	"github.com/evalgo/evlog"
 	"github.com/evalgo/evmail"
 	"github.com/evalgo/evmessage"
 	"github.com/evalgo/evmonitor"
 	"github.com/evalgo/evxml"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/rpc"
 )
@@ -166,7 +166,7 @@ func CreateFeature(context *evapplication.EVApplicationContext) (*Feature, error
 func (httpFeature *Feature) Initialize() error {
 	//initialize rpc objects
 	RpcObjects = make(map[string]evmessage.EVMessageHttpRpcInterface, 0)
-	log.Println("initialize: adding evmail.NewEVMailEmail object...")
+	evlog.Println("initialize: adding evmail.NewEVMailEmail object...")
 	RpcObjects["evmail"] = evmail.NewEVMailEmail()
 	// register all evapplication message gob objects
 	gobObjects := evapplication.NewEVApplicationGobRegisteredObjects()
@@ -175,80 +175,80 @@ func (httpFeature *Feature) Initialize() error {
 }
 
 func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("starting ServeHTTP ---------------------------------------------- ...")
-	log.Println(r.Method+":", r.URL.Path)
+	evlog.Println("starting ServeHTTP ---------------------------------------------- ...")
+	evlog.Println(r.Method+":", r.URL.Path)
 	w.Header().Add("Content-Type", "text/xml; charset=utf-8")
-	log.Println("running create messages(req,res)...")
+	evlog.Println("running create messages(req,res)...")
 	reqMsg, resMsg, rpcFuncName, err := RpcObjects["evmail"].EVMessageHttpCreateRpcMessage(w, r)
 	if err != nil {
 		resMsg := evmessage.EVMessageRpcServiceInitializeErrorMessage()
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
 	connectors := evmessage.NewEVMessageConnectors()
 	connectorsConf := new(evmessage.EVMessageConnectorsConf)
-	log.Println("search connectors file...")
+	evlog.Println("search connectors file...")
 	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "evalgo/evemail")
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
-	log.Println("read connectors from file...")
+	evlog.Println("read connectors from file...")
 	err = evxml.FromXmlFile(connectorsConf, connPath)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
-	log.Println("load all connectors into the connectors object from connnectors conf...")
+	evlog.Println("load all connectors into the connectors object from connnectors conf...")
 	for _, conn := range connectorsConf.Connectors {
-		log.Println("appending connector:" + conn.Id() + "...")
+		evlog.Println("appending connector:" + conn.Id() + "...")
 		connectors.Append(conn)
 	}
-	log.Println("append connectors to request message...")
+	evlog.Println("append connectors to request message...")
 	reqMsg.AppendToBody(connectors)
 
 	// get connection data for the service from the monitor
 	ip, port, err := evmonitor.EVMonitorRpcRequestInfo("evemail-rpc", connectorsConf.Connectors)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
 
-	log.Println("create rpc client...")
+	evlog.Println("create rpc client...")
 	client, err := rpc.DialHTTP("tcp", ip+":"+port)
 	defer client.Close()
-	log.Println("call rpc service...")
+	evlog.Println("call rpc service...")
 	err = client.Call(rpcFuncName, reqMsg, resMsg)
-	log.Println("remove connectors...")
+	evlog.Println("remove connectors...")
 	resMsg.Remove(connectors.EVName())
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
-	log.Println("running response handle...")
+	evlog.Println("running response handle...")
 	response, err := RpcObjects["evmail"].EVMessageHttpRpcHandleResponse(w, r, resMsg)
 	if err != nil {
 		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(err)
-		log.Println("error:", err)
+		evlog.Println("error:", err)
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
 	fmt.Fprintf(w, "%s", response)
-	log.Println("ServeHTTP finished successfull...")
+	evlog.Println("ServeHTTP finished successfull...")
 }
