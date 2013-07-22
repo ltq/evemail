@@ -19,7 +19,7 @@ import (
 	"net/rpc"
 )
 
-var RpcObjects map[string]evmessage.EVMessageHttpRpcInterface = nil
+var RpcObjects map[string]evmessage.HttpRpcInterface = nil
 
 const (
 	formDefaultMaxMemory = 32 << 20 // 32 MB
@@ -38,18 +38,18 @@ func NewFeatureTemplate() *FeatureTemplate {
 }
 
 type FeatureConfig struct {
-	FeatureName string                                   `xml:"FeatureName"`
-	SrvName     string                                   `xml:"ServiceName"`
-	URLS        []string                                 `xml:"URLS"`
-	Theme       *evapplication.EVApplicationFeatureTheme `xml:"FeatureTheme"`
-	Templates   []*FeatureTemplate                       `xml:"FeatureTemplates>FeatureTemplate"`
-	Redirect    *Redirect                                `xml:"Redirect"`
+	FeatureName string                      `xml:"FeatureName"`
+	SrvName     string                      `xml:"ServiceName"`
+	URLS        []string                    `xml:"URLS"`
+	Theme       *evapplication.FeatureTheme `xml:"FeatureTheme"`
+	Templates   []*FeatureTemplate          `xml:"FeatureTemplates>FeatureTemplate"`
+	Redirect    *Redirect                   `xml:"Redirect"`
 }
 
 func NewFeatureConfig() *FeatureConfig {
 	config := new(FeatureConfig)
 	config.URLS = make([]string, 0)
-	config.Theme = evapplication.NewEVApplicationFeatureTheme()
+	config.Theme = evapplication.NewFeatureTheme()
 	config.Templates = make([]*FeatureTemplate, 0)
 	config.Redirect = NewRedirect()
 	return config
@@ -94,7 +94,7 @@ func (config *FeatureConfig) Template(typeT string) (string, error) {
 
 type Feature struct {
 	Config  interface{}
-	Context *evapplication.EVApplicationContext
+	Context *evapplication.Context
 }
 
 func NewFeature() *Feature {
@@ -147,7 +147,7 @@ func (httpFeature *Feature) SetRegisteredHandlers(handlers map[string]interface{
 	httpFeature.Context.Handlers = handlers
 }
 
-func CreateFeature(context *evapplication.EVApplicationContext) (*Feature, error) {
+func CreateFeature(context *evapplication.Context) (*Feature, error) {
 	configPath, err := evapi.PackageConfigPath("config.xml", context.Name, "evalgo/evemail")
 	if err != nil {
 		return nil, everror.NewFromError(err)
@@ -165,11 +165,11 @@ func CreateFeature(context *evapplication.EVApplicationContext) (*Feature, error
 
 func (httpFeature *Feature) Initialize() error {
 	//initialize rpc objects
-	RpcObjects = make(map[string]evmessage.EVMessageHttpRpcInterface, 0)
-	evlog.Println("initialize: adding evmail.NewEVMailEmail object...")
-	RpcObjects["evmail"] = evmail.NewEVMailEmail()
+	RpcObjects = make(map[string]evmessage.HttpRpcInterface, 0)
+	evlog.Println("initialize: adding evmail.NewEmail object...")
+	RpcObjects["evmail"] = evmail.NewEmail()
 	// register all evapplication message gob objects
-	gobObjects := evapplication.NewEVApplicationGobRegisteredObjects()
+	gobObjects := evapplication.NewGobRegisteredObjects()
 	gobObjects.RegisterAll()
 	return nil
 }
@@ -179,21 +179,21 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println(r.Method+":", r.URL.Path)
 	w.Header().Add("Content-Type", "text/xml; charset=utf-8")
 	evlog.Println("running create messages(req,res)...")
-	reqMsg, resMsg, rpcFuncName, err := RpcObjects["evmail"].EVMessageHttpCreateRpcMessage(w, r)
+	reqMsg, resMsg, rpcFuncName, err := RpcObjects["evmail"].HttpCreateRpcMessage(w, r)
 	if err != nil {
-		resMsg := evmessage.EVMessageRpcServiceInitializeErrorMessage()
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg := evmessage.RpcServiceInitializeErrorMessage()
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
-	connectors := evmessage.NewEVMessageConnectors()
-	connectorsConf := new(evmessage.EVMessageConnectorsConf)
+	connectors := evmessage.NewConnectors()
+	connectorsConf := new(evmessage.ConnectorsConf)
 	evlog.Println("search connectors file...")
 	connPath, err := evapi.PackageConfigPath("connectors.xml", httpFeature.Context.Name, "evalgo/evemail")
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -202,7 +202,7 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("read connectors from file...")
 	err = evxml.FromXmlFile(connectorsConf, connPath)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -217,9 +217,9 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqMsg.AppendToBody(connectors)
 
 	// get connection data for the service from the monitor
-	ip, port, err := evmonitor.EVMonitorRpcRequestInfo("evemail-rpc", connectorsConf.Connectors)
+	ip, port, err := evmonitor.RpcRequestInfo("evemail-rpc", connectorsConf.Connectors)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
@@ -234,16 +234,16 @@ func (httpFeature *Feature) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	evlog.Println("remove connectors...")
 	resMsg.Remove(connectors.EVName())
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)
 		return
 	}
 	evlog.Println("running response handle...")
-	response, err := RpcObjects["evmail"].EVMessageHttpRpcHandleResponse(w, r, resMsg)
+	response, err := RpcObjects["evmail"].HttpRpcHandleResponse(w, r, resMsg)
 	if err != nil {
-		resMsg.Body("errors").(*evmessage.EVMessageErrors).Append(everror.NewFromError(err))
+		resMsg.Body("errors").(*evmessage.Errors).Append(everror.NewFromError(err))
 		evlog.Println("error:", everror.NewFromError(err))
 		resXml, _ := resMsg.ToXmlString()
 		fmt.Fprintf(w, "%s", resXml)

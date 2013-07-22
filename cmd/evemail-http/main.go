@@ -15,7 +15,7 @@ import (
 var MuxPatterns []string
 var MuxFound bool
 
-func Factory(featureName string, context *evapplication.EVApplicationContext) (evapplication.EVApplicationFeatureInterface, error) {
+func Factory(featureName string, context *evapplication.Context) (evapplication.FeatureInterface, error) {
 	switch featureName {
 
 	case "evemail":
@@ -32,7 +32,7 @@ func Factory(featureName string, context *evapplication.EVApplicationContext) (e
 func main() {
 	MuxPatterns = make([]string, 0)
 	MuxFound = false
-	context := evapplication.NewEVApplicationContext()
+	context := evapplication.NewContext()
 	context.Name = "evemail"
 	handlObj, err := Factory("evemail", context)
 	if err != nil {
