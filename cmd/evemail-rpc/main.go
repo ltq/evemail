@@ -8,38 +8,39 @@ import (
 	"github.com/evalgo/evapi"
 	"github.com/evalgo/evapplication"
 	"github.com/evalgo/evemail"
-	"log"
+	"github.com/evalgo/everror"
+	"github.com/evalgo/evlog"
 	"net"
 	"net/http"
 	"net/rpc"
 )
 
 func main() {
-	gobObjects := evapplication.NewEVApplicationGobRegisteredObjects()
+	gobObjects := evapplication.NewGobRegisteredObjects()
 	gobObjects.Append(evemail.NewFeature())
 	gobObjects.RegisterAll()
-	configPath, err := evapi.ConfigPath("config.xml", "github.com/evalgo/evemail")
+	configPath, err := evapi.ConfigPath("config.xml", "evalgo/evemail")
 	if err != nil {
-		panic(err)
+		evlog.FatalError(everror.NewFromError(err))
 	}
-	log.Println("get config path:", configPath)
+	evlog.Println("get config path:", configPath)
 	config, err := evemail.Config(configPath)
 	if err != nil {
-		panic(err)
+		evlog.FatalError(everror.NewFromError(err))
 	}
 	feature := evemail.NewFeature()
 	feature.Config = config
 	rpc.Register(feature)
 	rpc.HandleHTTP()
 	var ip string = ""
-	ip, err := evapi.EVApiHostIp()
+	ip, err = evapi.HostIp()
 	if err != nil {
-		log.Println("warning:", err)
+		evlog.Println("warning:", everror.NewFromError(err))
 	}
-	log.Println("starting feature on  " + ip + ":7070...")
+	evlog.Println("starting feature on  " + ip + ":7070...")
 	l, e := net.Listen("tcp", ip+":7070")
 	if e != nil {
-		panic(e)
+		evlog.FatalError(everror.NewFromError(e))
 	}
 	http.Serve(l, nil)
 }
