@@ -1,17 +1,17 @@
 <EVApplicationFeatureConfig>
  <FeatureName>evemail</FeatureName>
- <URLS>/v1/emails</URLS>
- <URLS>/v1/emails.xml</URLS>
- <URLS>/v1/emails.json</URLS>
- <URLS>/v1/emails/</URLS>
- <URLS>/v1/emails.xml/</URLS>
- <URLS>/v1/emails.json/</URLS>
- <URLS>/emails</URLS>
- <URLS>/emails.xml</URLS>
- <URLS>/emails.json</URLS>
- <URLS>/emails/</URLS>
- <URLS>/emails.xml/</URLS>
- <URLS>/emails.json/</URLS>
+ <URLS>/v1/evemail/emails</URLS>
+ <URLS>/v1/evemail/emails.xml</URLS>
+ <URLS>/v1/evemail/emails.json</URLS>
+ <URLS>/v1/evemail/emails/</URLS>
+ <URLS>/v1/evemail/emails.xml/</URLS>
+ <URLS>/v1/evemail/emails.json/</URLS>
+ <URLS>/evemail/emails</URLS>
+ <URLS>/evemail/emails.xml</URLS>
+ <URLS>/evemail/emails.json</URLS>
+ <URLS>/evemail/emails/</URLS>
+ <URLS>/evemail/emails.xml/</URLS>
+ <URLS>/evemail/emails.json/</URLS>
  <FeatureTheme>
   <Name></Name>
   <Path></Path>
